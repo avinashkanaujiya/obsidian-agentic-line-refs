@@ -13,12 +13,12 @@ export interface RefMode {
 }
 
 export interface AgenticNoteReferencesSettings {
-	/** Template for the built-in "Default" option in the editor mode picker. */
+	/** Template for the built-in "Default" ref mode shown in the picker. */
 	template: string;
 	pathFormat: PathFormat;
-	/** Template used in Reading mode (no line-number placeholders). */
+	/** Template for the built-in "Reading mode" option shown in the picker. */
 	readingModeTemplate: string;
-	/** User-defined ref modes that appear in the editor mode picker. */
+	/** User-defined ref modes that appear in the shared picker. */
 	customRefModes: RefMode[];
 }
 
@@ -64,7 +64,7 @@ export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Default citation template")
 			.setDesc(
-				"The 'Default' option shown in the editor mode picker. " +
+				"The built-in 'Default' ref mode shown in the picker. " +
 					"Placeholders: {{filename}}, {{from}}, {{to}}, {{lines}}. " +
 					"Use \\n for new lines.",
 			)
@@ -83,7 +83,7 @@ export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Reading mode template")
 			.setDesc(
-				"Template used when Ctrl+Alt+I is pressed in Reading mode. " +
+				"The built-in 'Reading mode' option shown in the picker. " +
 					"Only {{filename}} is available here — no line numbers. " +
 					"Use \\n for new lines.",
 			)
@@ -102,8 +102,8 @@ export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("")
 			.setDesc(
-				"Custom modes appear in the picker when pressing Ctrl+Alt+I in " +
-					"editor mode. Placeholders: {{filename}}, {{from}}, {{to}}, {{lines}}.",
+				"Custom modes appear in the picker whenever Ctrl+Alt+I is pressed. " +
+					"Placeholders: {{filename}}, {{from}}, {{to}}, {{lines}}.",
 			);
 
 		this.renderRefModes(containerEl);

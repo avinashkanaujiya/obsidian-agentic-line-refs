@@ -1,5 +1,4 @@
 import {
-	Editor,
 	FileSystemAdapter,
 	MarkdownView,
 	Notice,
@@ -12,7 +11,8 @@ import {
 	type AgenticNoteReferencesSettings,
 } from "./settings";
 import { buildCitation } from "./citation";
-import { RefModeSuggestModal, type RefModeItem } from "./ref-mode-modal";
+import { RefModeSuggestModal } from "./ref-mode-modal";
+import { buildRefModeItems } from "./ref-mode-items";
 
 export default class AgenticNoteReferencesPlugin extends Plugin {
 	// Assigned in onload() via loadSettings(); definitely present before any
@@ -33,13 +33,7 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 				if (!view) return false;
 
 				if (!checking) {
-					if (view.getMode() === "preview") {
-						// Reading mode: copy the note reference without line numbers.
-						void this.copyReadingCitation(view);
-					} else {
-						// Editor mode: let the user pick a ref mode.
-						this.showRefModeModal(view.editor, view);
-					}
+					this.showCopyModeModal(view);
 				}
 				return true;
 			},
@@ -82,27 +76,11 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 		}
 	}
 
-	/** Reading mode: directly copies the note reference (no line numbers). */
-	private async copyReadingCitation(view: MarkdownView): Promise<void> {
-		const file = view.file;
-		if (!file) {
-			new Notice("No active file.");
-			return;
-		}
-
-		const filename = this.resolveFilename(file);
-		const output = buildCitation(this.settings.readingModeTemplate, {
-			filename,
-		});
-
-		await this.writeToClipboard(output);
-	}
-
 	/**
-	 * Editor mode: opens the ref-mode picker, then copies the citation built
-	 * from the chosen mode's template.
+	 * Opens the picker in both editor and reading mode, then copies the
+	 * citation built from the chosen mode's template.
 	 */
-	private showRefModeModal(editor: Editor, view: MarkdownView): void {
+	private showCopyModeModal(view: MarkdownView): void {
 		const file = view.file;
 		if (!file) {
 			new Notice("No active file.");
@@ -110,26 +88,22 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 		}
 
 		const filename = this.resolveFilename(file);
-		const fromLine = editor.getCursor("from").line + 1;
-		const toLine = editor.getCursor("to").line + 1;
-
-		const allModes: RefModeItem[] = [
-			{
-				name: "Default",
-				template: this.settings.template,
-			},
-			...this.settings.customRefModes.map((m) => ({
-				name: m.name,
-				template: m.template,
-			})),
-		];
+		const fromLine = view.editor.getCursor("from").line + 1;
+		const toLine = view.editor.getCursor("to").line + 1;
+		const pickerMode = view.getMode() === "preview" ? "reading" : "editor";
+		const allModes = buildRefModeItems(this.settings, pickerMode);
 
 		new RefModeSuggestModal(this.app, allModes, async (item) => {
-			const output = buildCitation(item.template, {
-				filename,
-				fromLine,
-				toLine,
-			});
+			const output = buildCitation(
+				item.template,
+				item.includeLineNumbers
+					? {
+							filename,
+							fromLine,
+							toLine,
+						}
+					: { filename },
+			);
 			await this.writeToClipboard(output);
 		}).open();
 	}

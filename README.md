@@ -10,18 +10,18 @@ An Obsidian plugin that copies a formatted note reference to the clipboard — r
 2. Press **Ctrl+Alt+I** (or run *Copy agentic citation* from the command palette).
 3. A picker appears — type to filter, arrow keys or mouse to choose:
 
-   - **Default** — built-in; uses the Default citation template from Settings
-   - *Custom modes* — any modes you define in Settings, in the order you set
+   - **Default** — built-in ref mode; uses the Default citation template from Settings
+   - *Custom modes* — ref modes you define in Settings, in the order you set
+   - **Reading mode** — built-in preset read mode; uses the Reading mode template
 
 4. The formatted citation is copied to the clipboard.
 
 ### Reading mode
 
-Press **Ctrl+Alt+I** while in Reading mode. The note reference is copied directly — no picker, no line numbers.
+Press **Ctrl+Alt+I** while in Reading mode and the same picker appears.
 
-Default output: `[[My Note]]`
-
-The template is configurable (see [Reading mode template](#reading-mode-template) below).
+- **Reading mode** is listed first and uses the Reading mode template.
+- **Ref modes** remain available too; when selected, they use the note's current editor cursor/selection for line numbers.
 
 ---
 
@@ -41,7 +41,7 @@ Controls how `{{filename}}` resolves in every template:
 
 ### Editor mode — Default citation template
 
-The template used by the built-in **Default** mode in the picker.
+The template used by the built-in **Default** ref mode in the picker.
 
 Default value:
 ```
@@ -52,7 +52,7 @@ Here is the referenced section:
 
 ### Reading mode template
 
-The template used when Ctrl+Alt+I is pressed in Reading mode.
+The template used by the built-in **Reading mode** option in the picker.
 
 Default value: `[[{{filename}}]]`
 
@@ -63,18 +63,18 @@ Click **Add ref mode** to create a new mode. Each mode has:
 - **Name** — shown in the picker list
 - **Template** — the text that gets copied
 
-Use the **↑ / ↓** buttons to reorder modes. Their order in Settings is the order they appear in the picker, below the built-in **Default**.
+Use the **↑ / ↓** buttons to reorder modes. Their order in Settings is the order they appear among the ref modes in the picker.
 
 ### Template placeholders
 
 | Placeholder | Expands to | Available in |
 |-------------|------------|--------------|
 | `{{filename}}` | File reference per path format | All modes |
-| `{{from}}` | Starting line number (1-indexed) | Editor modes only |
-| `{{to}}` | Ending line number (1-indexed) | Editor modes only |
-| `{{lines}}` | `Line 5` or `Lines 3–7` | Editor modes only |
+| `{{from}}` | Starting line number (1-indexed) | Ref modes only |
+| `{{to}}` | Ending line number (1-indexed) | Ref modes only |
+| `{{lines}}` | `Line 5` or `Lines 3–7` | Ref modes only |
 
-In Reading mode, `{{from}}`, `{{to}}`, and `{{lines}}` are not available — use only `{{filename}}`.
+In the Reading mode template, `{{from}}`, `{{to}}`, and `{{lines}}` are not available — use only `{{filename}}`.
 
 Use `\n` for explicit newlines in any template.
 
