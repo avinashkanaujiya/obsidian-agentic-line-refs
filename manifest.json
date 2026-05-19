@@ -1,7 +1,7 @@
 {
 	"id": "agentic-note-references",
 	"name": "Agentic Note References",
-	"version": "1.2.1",
+	"version": "1.3.0",
 	"minAppVersion": "0.15.0",
 	"description": "Copy a citation with file link, line numbers, and a custom prompt for AI agents.",
 	"author": "imavinash",
