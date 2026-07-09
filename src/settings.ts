@@ -12,6 +12,12 @@ export interface RefMode {
 	template: string;
 }
 
+export interface VaultPath {
+	id: string;
+	name: string;
+	path: string;
+}
+
 export interface AgenticNoteReferencesSettings {
 	/** Template for the built-in "Default" ref mode shown in the picker. */
 	template: string;
@@ -20,6 +26,10 @@ export interface AgenticNoteReferencesSettings {
 	readingModeTemplate: string;
 	/** User-defined ref modes that appear in the shared picker. */
 	customRefModes: RefMode[];
+	/** Configured vault root paths for absolute-path citations. */
+	vaultPaths: VaultPath[];
+	/** ID of the currently active vault path (null = use local vault path). */
+	activeVaultPathId: string | null;
 }
 
 export const DEFAULT_SETTINGS: AgenticNoteReferencesSettings = {
@@ -28,6 +38,8 @@ export const DEFAULT_SETTINGS: AgenticNoteReferencesSettings = {
 	pathFormat: "filename",
 	readingModeTemplate: "[[{{filename}}]]",
 	customRefModes: [],
+	vaultPaths: [],
+	activeVaultPathId: null,
 };
 
 export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
@@ -57,6 +69,47 @@ export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}),
 			);
+
+		// ── Vault paths ────────────────────────────────────────────────────────
+		new Setting(containerEl).setName("Vault paths").setHeading();
+
+		new Setting(containerEl)
+			.setName("Active vault path")
+			.setDesc(
+				"The vault root path used for absolute-path citations. " +
+					'Select "Use local vault path" to fall back to this machine\'s vault location.',
+			)
+			.addDropdown((dropdown) => {
+				dropdown.addOption("", "Use local vault path");
+				for (const vp of this.plugin.settings.vaultPaths) {
+					dropdown.addOption(vp.id, vp.name);
+				}
+				dropdown.setValue(
+					this.plugin.settings.activeVaultPathId ?? "",
+				);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.activeVaultPathId =
+						value || null;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		this.renderVaultPaths(containerEl);
+
+		new Setting(containerEl).addButton((btn) =>
+			btn
+				.setButtonText("Add vault path")
+				.setCta()
+				.onClick(async () => {
+					this.plugin.settings.vaultPaths.push({
+						id: Date.now().toString(36),
+						name: "New path",
+						path: "",
+					});
+					await this.plugin.saveSettings();
+					this.display();
+				}),
+		);
 
 		// ── Editor mode ───────────────────────────────────────────────────────
 		new Setting(containerEl).setName("Editor mode").setHeading();
@@ -122,6 +175,76 @@ export class AgenticNoteReferencesSettingTab extends PluginSettingTab {
 					this.display();
 				}),
 		);
+	}
+
+	private renderVaultPaths(containerEl: HTMLElement): void {
+		const paths = this.plugin.settings.vaultPaths;
+
+		for (let i = 0; i < paths.length; i++) {
+			const vp = paths[i];
+
+			new Setting(containerEl)
+				.setName("Name")
+				.addText((text) =>
+					text
+						.setPlaceholder("Path label")
+						.setValue(vp.name)
+						.onChange(async (value) => {
+							vp.name = value;
+							await this.plugin.saveSettings();
+						}),
+				)
+				.addExtraButton((btn) =>
+					btn
+						.setIcon("arrow-up")
+						.setTooltip("Move up")
+						.setDisabled(i === 0)
+						.onClick(async () => {
+							[paths[i - 1], paths[i]] = [paths[i], paths[i - 1]];
+							await this.plugin.saveSettings();
+							this.display();
+						}),
+				)
+				.addExtraButton((btn) =>
+					btn
+						.setIcon("arrow-down")
+						.setTooltip("Move down")
+						.setDisabled(i === paths.length - 1)
+						.onClick(async () => {
+							[paths[i], paths[i + 1]] = [paths[i + 1], paths[i]];
+							await this.plugin.saveSettings();
+							this.display();
+						}),
+				)
+				.addExtraButton((btn) =>
+					btn
+						.setIcon("trash")
+						.setTooltip("Delete this vault path")
+						.onClick(async () => {
+							this.plugin.settings.vaultPaths =
+								paths.filter((p) => p.id !== vp.id);
+							if (
+								this.plugin.settings.activeVaultPathId === vp.id
+							) {
+								this.plugin.settings.activeVaultPathId = null;
+							}
+							await this.plugin.saveSettings();
+							this.display();
+						}),
+				);
+
+			new Setting(containerEl)
+				.setName("Path")
+				.addText((text) =>
+					text
+						.setPlaceholder("/home/user/vault")
+						.setValue(vp.path)
+						.onChange(async (value) => {
+							vp.path = value;
+							await this.plugin.saveSettings();
+						}),
+				);
+		}
 	}
 
 	private renderRefModes(containerEl: HTMLElement): void {

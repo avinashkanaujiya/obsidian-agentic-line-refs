@@ -58,11 +58,7 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 			case "vaultRelative":
 				return file.path;
 			case "absolute": {
-				const adapter = this.app.vault.adapter;
-				const basePath =
-					adapter instanceof FileSystemAdapter
-						? adapter.getBasePath()
-						: "";
+				const basePath = this.getActiveVaultBasePath();
 				if (!basePath) {
 					new Notice(
 						"Absolute path is unavailable on this platform — using vault-relative path.",
@@ -74,6 +70,23 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 			default:
 				return file.basename;
 		}
+	}
+
+	/**
+	 * Returns the base path for absolute citations: the active vault path
+	 * if configured, otherwise the local vault's filesystem base path.
+	 */
+	private getActiveVaultBasePath(): string {
+		const { activeVaultPathId, vaultPaths } = this.settings;
+		if (activeVaultPathId) {
+			const active = vaultPaths.find((p) => p.id === activeVaultPathId);
+			if (active) return active.path;
+		}
+		const adapter = this.app.vault.adapter;
+		if (adapter instanceof FileSystemAdapter) {
+			return adapter.getBasePath();
+		}
+		return "";
 	}
 
 	/**
@@ -124,6 +137,15 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			await this.loadData(),
 		);
+		// Clean up dangling activePathId if the referenced path was deleted.
+		if (
+			this.settings.activeVaultPathId &&
+			!this.settings.vaultPaths.some(
+				(p) => p.id === this.settings.activeVaultPathId,
+			)
+		) {
+			this.settings.activeVaultPathId = null;
+		}
 	}
 
 	async saveSettings() {
