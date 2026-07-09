@@ -37,12 +37,6 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 				}
 				return true;
 			},
-			hotkeys: [
-				{
-					modifiers: ["Ctrl", "Alt"],
-					key: "i",
-				},
-			],
 		});
 
 		this.addSettingTab(new AgenticNoteReferencesSettingTab(this.app, this));
@@ -106,18 +100,20 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 		const pickerMode = view.getMode() === "preview" ? "reading" : "editor";
 		const allModes = buildRefModeItems(this.settings, pickerMode);
 
-		new RefModeSuggestModal(this.app, allModes, async (item) => {
-			const output = buildCitation(
-				item.template,
-				item.includeLineNumbers
-					? {
-							filename,
-							fromLine,
-							toLine,
-						}
-					: { filename },
-			);
-			await this.writeToClipboard(output);
+		new RefModeSuggestModal(this.app, allModes, (item) => {
+			void (async () => {
+				const output = buildCitation(
+					item.template,
+					item.includeLineNumbers
+						? {
+								filename,
+								fromLine,
+								toLine,
+							}
+						: { filename },
+				);
+				await this.writeToClipboard(output);
+			})();
 		}).open();
 	}
 
@@ -125,7 +121,7 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 		try {
 			await navigator.clipboard.writeText(text);
 			new Notice("Agentic citation copied to clipboard.");
-		} catch (err) {
+		} catch (err: unknown) {
 			new Notice("Failed to copy citation to clipboard.");
 			console.error("Agentic Note References: clipboard write failed", err);
 		}
@@ -135,7 +131,7 @@ export default class AgenticNoteReferencesPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			await this.loadData(),
+			await this.loadData() as Partial<AgenticNoteReferencesSettings>,
 		);
 		// Clean up dangling activePathId if the referenced path was deleted.
 		if (
